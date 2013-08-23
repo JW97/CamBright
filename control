@@ -1,7 +1,7 @@
 Package: com.3bang.cambright
 Name: CamBright
 Depends: mobilesubstrate
-Version: 0.0.1
+Version: 1.0
 Architecture: iphoneos-arm
 Description: An awesome MobileSubstrate tweak!
 Maintainer: Jack Willis And Sirex
