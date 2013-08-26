@@ -1,20 +1,47 @@
 #import <UIKit/UIKit.h>
 
-static float _originalBrightness;
+float _originalBrightness = 0;
+BOOL _cameraOpen = NO;
 
-%hook PhotosApplication
-
-- (void)_applicationDidBecomeActive:(id)arg1
-{
-	%orig;
+void CBCameraWillAppear() {
 	_originalBrightness = [[UIScreen mainScreen] brightness];
+	_cameraOpen = YES;
 	[[UIScreen mainScreen] setBrightness:1.0f];
 }
 
-- (void)applicationDidEnterBackground:(id)arg1
+void CBCameraWillDisappear() {
+	if (_cameraOpen && [[UIScreen mainScreen] brightness] == 1.0f) {
+NSLog(@".........yes %f",_originalBrightness);
+		_cameraOpen = NO;
+		//dispatch_after(NSEC_PER_SEC, dispatch_get_main_queue(), ^{
+			[[UIScreen mainScreen] setBrightness:_originalBrightness];
+		//});
+	}
+}
+
+%hook PLCameraViewController
+
+- (void)viewWillAppear:(BOOL)animated
 {
 	%orig;
-	[[UIScreen mainScreen] setBrightness:_originalBrightness];
+	CBCameraWillAppear();
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+	%orig;
+NSLog(@"will disappear");
+	CBCameraWillDisappear();
 }
 
 %end
+
+%ctor
+{
+	if (![[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.apple.springboard"]) {
+		[[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationWillResignActiveNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *notification) {
+NSLog(@"okies");
+			CBCameraWillDisappear();
+		}];
+	}
+}
