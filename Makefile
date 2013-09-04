@@ -1,3 +1,5 @@
+TARGET = :clang
+
 include theos/makefiles/common.mk
 
 TWEAK_NAME = CamBright
