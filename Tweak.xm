@@ -1,20 +1,42 @@
 #import <UIKit/UIKit.h>
 
-static float _originalBrightness;
+float _originalBrightness = 0;
+BOOL _cameraOpen = NO;
 
-%hook PhotosApplication
-
-- (void)_applicationDidBecomeActive:(id)arg1
-{
-	%orig;
+void CBCameraOpened() {
 	_originalBrightness = [[UIScreen mainScreen] brightness];
+	_cameraOpen = YES;
 	[[UIScreen mainScreen] setBrightness:1.0f];
 }
 
-- (void)applicationDidEnterBackground:(id)arg1
+void CBCameraClosed() {
+	if (_cameraOpen && [[UIScreen mainScreen] brightness] == 1.0f) {
+		_cameraOpen = NO;
+		[[UIScreen mainScreen] setBrightness:_originalBrightness];
+	}
+}
+
+%hook PLCameraViewController
+
+- (void)viewWillAppear:(BOOL)animated
 {
 	%orig;
-	[[UIScreen mainScreen] setBrightness:_originalBrightness];
+	CBCameraOpened();
+}
+
+- (void)viewDidDisappear:(BOOL)animated
+{
+	%orig;
+	CBCameraClosed();
 }
 
 %end
+
+%ctor
+{
+	if (![[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.apple.springboard"]) {
+		[[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationWillResignActiveNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *notification) {
+			CBCameraClosed();
+		}];
+	}
+}
